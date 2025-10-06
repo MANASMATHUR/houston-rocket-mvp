@@ -153,8 +153,9 @@ export function InventoryTable() {
       toast.loading('Initiating order call...', { id: 'order-call' });
       await initiateOrderCall(row.player_name, row.edition, row.size, Math.max(1, 5 - row.qty_inventory));
       toast.success('Order call initiated successfully', { id: 'order-call' });
-    } catch (error) {
-      toast.error('Failed to initiate order call', { id: 'order-call' });
+    } catch (error: any) {
+      const message = error?.message || 'Failed to initiate order call';
+      toast.error(message, { id: 'order-call' });
       console.error('Order call error:', error);
     }
   };

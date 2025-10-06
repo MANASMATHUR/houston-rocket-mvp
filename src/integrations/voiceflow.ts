@@ -174,13 +174,6 @@ async function startVoiceflowCall(
   size: string,
   quantity: number
 ): Promise<void> {
-  const voiceflowApiUrl = import.meta.env.VITE_VOICEFLOW_CALL_API_URL;
-  const voiceflowApiKey = import.meta.env.VITE_VOICEFLOW_CALL_API_KEY;
-  
-  if (!voiceflowApiUrl || !voiceflowApiKey) {
-    throw new Error('Voiceflow call API not configured');
-  }
-  
   // Update status to in_progress
   await supabase
     .from('call_logs')
@@ -188,11 +181,11 @@ async function startVoiceflowCall(
     .eq('id', callLogId);
   
   try {
-    const response = await fetch(voiceflowApiUrl, {
+    // Call our secure serverless proxy which holds the secret
+    const response = await fetch('/api/start-call', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${voiceflowApiKey}`,
       },
       body: JSON.stringify({
         call_log_id: callLogId,
@@ -202,7 +195,6 @@ async function startVoiceflowCall(
           size: size,
           quantity: quantity,
         },
-        callback_url: `${window.location.origin}/api/call-callback`,
       }),
     });
     
