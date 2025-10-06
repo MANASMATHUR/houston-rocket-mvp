@@ -3,59 +3,110 @@ import { AuthGate } from './auth/AuthGate';
 import { InventoryTable } from './features/inventory/InventoryTable';
 import { SettingsPanel } from './features/settings/SettingsPanel';
 import { LogsPanel } from './features/logs/LogsPanel';
+import { Dashboard } from './features/dashboard/Dashboard';
 import { useEffect, useState } from 'react';
 import { supabase } from './lib/supabaseClient';
+import { Bell, Settings, Package, BarChart3, LogOut, User } from 'lucide-react';
 
 function App() {
-  const [tab, setTab] = useState<'inventory' | 'settings' | 'logs'>('inventory');
+  const [tab, setTab] = useState<'dashboard' | 'inventory' | 'settings' | 'logs'>('dashboard');
   const [userEmail, setUserEmail] = useState<string>('');
+  const [notifications, setNotifications] = useState<number>(0);
+
   useEffect(() => {
     (async () => {
       const { data } = await supabase.auth.getUser();
       setUserEmail(data.user?.email ?? '');
+      
+      // Check for low stock notifications
+      const { data: lowStockItems } = await supabase
+        .from('jerseys')
+        .select('*')
+        .lte('qty_inventory', 1);
+      
+      setNotifications(lowStockItems?.length || 0);
     })();
   }, []);
+
+  const tabs = [
+    { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+    { id: 'inventory', label: 'Inventory', icon: Package },
+    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'logs', label: 'Logs', icon: Bell },
+  ];
+
   return (
     <AuthGate>
-      <div className="space-y-4">
-        <header className="flex items-center gap-3 py-3">
-          <img src="/src/assets/rockets.svg" alt="Rockets" className="h-8 w-auto" />
-          <h1 className="text-2xl font-semibold">Rockets Jerseys</h1>
-          <nav className="ml-auto flex gap-2">
-            <button
-              className={`rounded px-3 py-1.5 ${tab === 'inventory' ? 'bg-gray-900 text-white' : 'border'}`}
-              onClick={() => setTab('inventory')}
-            >
-              Inventory
-            </button>
-            <button
-              className={`rounded px-3 py-1.5 ${tab === 'settings' ? 'bg-gray-900 text-white' : 'border'}`}
-              onClick={() => setTab('settings')}
-            >
-              Settings
-            </button>
-            <button
-              className={`rounded px-3 py-1.5 ${tab === 'logs' ? 'bg-gray-900 text-white' : 'border'}`}
-              onClick={() => setTab('logs')}
-            >
-              Logs
-            </button>
-            <div className="mx-2 hidden sm:block self-center text-sm text-gray-600">{userEmail}</div>
-            <button
-              className="rounded border px-3 py-1.5"
-              onClick={async () => {
-                await supabase.auth.signOut();
-                location.reload();
-              }}
-            >
-              Sign out
-            </button>
-          </nav>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <header className="bg-white shadow-sm border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <img src="/src/assets/rockets.svg" alt="Rockets" className="h-8 w-auto" />
+                  <h1 className="text-xl font-bold text-gray-900">Houston Inventory</h1>
+                </div>
+                <div className="hidden md:block text-sm text-gray-500">
+                  Jersey Management System
+                </div>
+              </div>
+
+              <nav className="flex items-center gap-1">
+                {tabs.map(({ id, label, icon: Icon }) => (
+                  <button
+                    key={id}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      tab === id
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                    onClick={() => setTab(id as any)}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {label}
+                    {id === 'logs' && notifications > 0 && (
+                      <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5 min-w-[20px] text-center">
+                        {notifications}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </nav>
+
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <User className="h-4 w-4" />
+                  <span className="hidden sm:block">{userEmail}</span>
+                </div>
+                <button
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    location.reload();
+                  }}
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden sm:block">Sign out</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </header>
-        {tab === 'inventory' ? <InventoryTable /> : tab === 'settings' ? <SettingsPanel /> : <LogsPanel />}
+
+        {/* Main Content */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="fade-in">
+            {tab === 'dashboard' && <Dashboard />}
+            {tab === 'inventory' && <InventoryTable />}
+            {tab === 'settings' && <SettingsPanel />}
+            {tab === 'logs' && <LogsPanel />}
+          </div>
+        </main>
       </div>
     </AuthGate>
   )
 }
 
 export default App
+
