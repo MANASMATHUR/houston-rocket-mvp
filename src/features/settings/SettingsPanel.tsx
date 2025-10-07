@@ -162,17 +162,21 @@ export function SettingsPanel() {
       const report = await generateInventoryReport();
       
       // Create and download the report
-      const blob = new Blob([report], { type: 'text/plain' });
+      const content = report && report.length > 0 ? report : 'No report content generated.';
+      const blob = new Blob([content], { type: 'text/plain' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `inventory-report-${new Date().toISOString().split('T')[0]}.txt`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
       
       toast.success('Report generated and downloaded', { id: 'report' });
     } catch (error) {
-      toast.error('Failed to generate report', { id: 'report' });
+      const message = (error as any)?.message || 'Failed to generate report';
+      toast.error(message, { id: 'report' });
       console.error('Report generation error:', error);
     }
   };

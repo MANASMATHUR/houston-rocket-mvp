@@ -184,7 +184,9 @@ export function InventoryTable() {
         });
       } catch {}
     } catch (e: any) {
-      toast.error(e?.message || 'Failed to add jersey');
+      const message = e?.message || 'Failed to add jersey';
+      toast.error(message);
+      console.error('Add jersey error:', e);
     } finally {
       setAdding(false);
     }
