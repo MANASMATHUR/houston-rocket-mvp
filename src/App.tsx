@@ -1,4 +1,5 @@
 import './App.css'
+import rocketsLogo from './assets/rockets.svg';
 import { AuthGate } from './auth/AuthGate';
 import { InventoryTable } from './features/inventory/InventoryTable';
 import { SettingsPanel } from './features/settings/SettingsPanel';
@@ -39,27 +40,27 @@ function App() {
     <AuthGate>
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
+        <header className="bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
-                  <img src="/src/assets/rockets.svg" alt="Rockets" className="h-8 w-auto" />
-                  <h1 className="text-xl font-bold text-gray-900">Houston Inventory</h1>
+                  <img src={rocketsLogo} alt="Rockets" className="h-8 w-auto drop-shadow-sm" />
+                  <h1 className="text-xl font-bold text-gray-900 tracking-tight">Houston Inventory</h1>
                 </div>
                 <div className="hidden md:block text-sm text-gray-500">
                   Jersey Management System
                 </div>
               </div>
 
-              <nav className="flex items-center gap-1">
+              <nav className="flex items-center gap-1 p-1 rounded-xl bg-gray-100/60">
                 {tabs.map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                       tab === id
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                        ? 'bg-white text-blue-700 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-white/70'
                     }`}
                     onClick={() => setTab(id as any)}
                   >

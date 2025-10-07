@@ -136,7 +136,7 @@ export function Dashboard() {
     color: string;
     subtitle?: string;
   }) => (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div className="card p-6 transition-transform hover:-translate-y-0.5">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-gray-600">{title}</p>
@@ -210,7 +210,7 @@ export function Dashboard() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Edition Distribution */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="card p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Jersey Distribution by Edition</h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
@@ -234,7 +234,7 @@ export function Dashboard() {
         </div>
 
         {/* Recent Calls */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="card p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Order Calls</h3>
           <div className="space-y-3">
             {recentCalls.map((call) => (
@@ -272,7 +272,7 @@ export function Dashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="card p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <button className="btn btn-primary">

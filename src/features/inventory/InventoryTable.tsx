@@ -273,7 +273,7 @@ export function InventoryTable() {
       </div>
 
       {/* Filters and Search */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div className="card p-4">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex-1 min-w-64">
             <div className="relative">
@@ -372,7 +372,7 @@ export function InventoryTable() {
 
       {/* Stats Summary */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="card p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Items</p>
@@ -382,7 +382,7 @@ export function InventoryTable() {
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="card p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Low Stock</p>
@@ -392,7 +392,7 @@ export function InventoryTable() {
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="card p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Value</p>
@@ -402,7 +402,7 @@ export function InventoryTable() {
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="card p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Due to LVA</p>
@@ -414,7 +414,7 @@ export function InventoryTable() {
       </div>
 
       {/* Inventory Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="table">
             <thead>
@@ -540,7 +540,7 @@ export function InventoryTable() {
       {/* Add Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white w-full max-w-md rounded-lg shadow-lg border border-gray-200 p-6">
+          <div className="card w-full max-w-md p-6">
             <h2 className="text-lg font-semibold mb-4">Add Jersey</h2>
             <div className="space-y-4">
               <div>

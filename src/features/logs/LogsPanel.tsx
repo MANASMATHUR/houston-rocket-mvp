@@ -142,7 +142,7 @@ export function LogsPanel() {
 
       {/* Activity Logs Tab */}
       {activeTab === 'activity' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="table">
               <thead>
@@ -194,7 +194,7 @@ export function LogsPanel() {
         <div className="space-y-4">
           {/* Call Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="card p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total Calls</p>
@@ -204,7 +204,7 @@ export function LogsPanel() {
               </div>
             </div>
             
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="card p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Completed</p>
@@ -216,7 +216,7 @@ export function LogsPanel() {
               </div>
             </div>
             
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="card p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Failed</p>
@@ -252,7 +252,7 @@ export function LogsPanel() {
           </div>
 
           {/* Call Logs Table */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="table">
                 <thead>

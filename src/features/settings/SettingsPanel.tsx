@@ -190,7 +190,7 @@ export function SettingsPanel() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* System Settings */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="card p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <SettingsIcon className="h-5 w-5" />
             System Settings
@@ -232,7 +232,7 @@ export function SettingsPanel() {
         </div>
 
         {/* User Preferences */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="card p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <User className="h-5 w-5" />
             User Preferences
@@ -315,7 +315,7 @@ export function SettingsPanel() {
         </div>
 
         {/* Reports & Analytics */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="card p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <Download className="h-5 w-5" />
             Reports & Analytics
@@ -337,7 +337,7 @@ export function SettingsPanel() {
         </div>
 
         {/* AI Suggestions */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="card p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <Lightbulb className="h-5 w-5" />
             AI-Powered Suggestions
