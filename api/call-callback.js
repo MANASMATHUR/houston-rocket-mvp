@@ -6,8 +6,9 @@ import { createClient } from '@supabase/supabase-js';
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
-  const supabaseUrl = process.env.VITE_SUPABASE_URL;
-  const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+  // Use server-side env vars (avoid VITE_ prefix which is meant for client)
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
   if (!supabaseUrl || !supabaseAnonKey) {
     return res.status(500).send('Supabase environment variables are missing');
   }
@@ -15,6 +16,7 @@ export default async function handler(req, res) {
   const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
   try {
+    const body = typeof req.body === 'string' ? safeJsonParse(req.body) : (req.body || {});
     const {
       call_log_id,
       status, // 'completed' | 'failed' | 'in_progress' | 'cancelled'
@@ -24,7 +26,7 @@ export default async function handler(req, res) {
       order_details,
       error_message,
       voiceflow_session_id,
-    } = req.body || {};
+    } = body;
 
     if (!call_log_id) return res.status(400).send('Missing call_log_id');
 
@@ -44,6 +46,10 @@ export default async function handler(req, res) {
   } catch (e) {
     return res.status(500).send(e?.message || 'Unknown error');
   }
+}
+
+function safeJsonParse(text) {
+  try { return JSON.parse(text); } catch { return {}; }
 }
 
 

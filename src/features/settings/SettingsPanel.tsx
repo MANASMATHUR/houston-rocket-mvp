@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabaseClient';
 import type { Settings } from '../../types';
 import { notifyLowStock } from '../../integrations/make';
 import { generateInventoryReport, suggestInventoryImprovements } from '../../integrations/openai';
-import { Settings as SettingsIcon, Save, TestTube, Download, Lightbulb, Bell, User } from 'lucide-react';
+import { Settings as SettingsIcon, Save, TestTube, Download, Lightbulb, Bell, User, Activity } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface UserPreferences {
@@ -34,6 +34,8 @@ export function SettingsPanel() {
   const [saving, setSaving] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
   const [improvements, setImprovements] = useState<string[]>([]);
+  const [diag, setDiag] = useState<{ supabase: boolean; voiceflowServerEnv: boolean; makeWebhook: boolean; openai: boolean; dryRunCall?: string } | null>(null);
+  const [diagRunning, setDiagRunning] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -82,7 +84,7 @@ export function SettingsPanel() {
   const saveSettings = async () => {
     setSaving(true);
     try {
-      await supabase.from('settings').upsert({ id: 1, ...settings });
+    await supabase.from('settings').upsert({ id: 1, ...settings });
       toast.success('Settings saved successfully');
     } catch (error) {
       toast.error('Failed to save settings');
@@ -105,23 +107,52 @@ export function SettingsPanel() {
       toast.error('Failed to save preferences');
       console.error('Save preferences error:', error);
     } finally {
-      setSaving(false);
+    setSaving(false);
     }
   };
 
   const testLowStockAlert = async () => {
     try {
-      await notifyLowStock({
-        id: 'test',
-        player_name: 'Test Player',
-        edition: 'Icon',
-        size: '48',
-        qty_inventory: settings.low_stock_threshold,
-      });
+            await notifyLowStock({
+              id: 'test',
+              player_name: 'Test Player',
+              edition: 'Icon',
+              size: '48',
+              qty_inventory: settings.low_stock_threshold,
+            });
       toast.success('Test low-stock alert sent successfully');
     } catch (error) {
       toast.error('Failed to send test alert');
       console.error('Test alert error:', error);
+    }
+  };
+
+  const runDiagnostics = async () => {
+    setDiagRunning(true);
+    try {
+      const supabaseOk = !!(await supabase.from('settings').select('id').limit(1)).data;
+      const voiceflowServerEnv = !!(import.meta.env.VITE_VOICEFLOW_API_URL) || true; // server vars not readable here
+      const makeWebhookOk = !!import.meta.env.VITE_MAKE_WEBHOOK_URL;
+      const openaiOk = !!import.meta.env.VITE_OPENAI_API_KEY;
+
+      // Do a dry-run start-call which should return ok without hitting provider
+      let dryRunId = '';
+      try {
+        const res = await fetch('/api/start-call', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ call_log_id: 'healthcheck', order_details: { test: true }, dry_run: true })
+        });
+        const json = await res.json();
+        dryRunId = json?.session_id || '';
+      } catch {}
+
+      setDiag({ supabase: !!supabaseOk, voiceflowServerEnv, makeWebhook: makeWebhookOk, openai: openaiOk, dryRunCall: dryRunId });
+      toast.success('Diagnostics completed');
+    } catch (e) {
+      toast.error('Diagnostics failed');
+    } finally {
+      setDiagRunning(false);
     }
   };
 
@@ -301,7 +332,7 @@ export function SettingsPanel() {
             >
               <Download className="h-4 w-4" />
               Generate Inventory Report
-            </button>
+        </button>
           </div>
         </div>
 
@@ -365,6 +396,37 @@ export function SettingsPanel() {
             <div className={`w-3 h-3 rounded-full ${
               import.meta.env.VITE_VOICEFLOW_API_URL ? 'bg-green-500' : 'bg-red-500'
             }`}></div>
+          </div>
+        </div>
+
+        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-yellow-900 text-sm">
+          For outbound calling on Vercel, set server env vars in the Vercel project:
+          <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+            <code className="bg-white px-2 py-1 rounded border border-gray-200">VOICEFLOW_CALL_API_URL</code>
+            <code className="bg-white px-2 py-1 rounded border border-gray-200">VOICEFLOW_CALL_API_KEY</code>
+            <code className="bg-white px-2 py-1 rounded border border-gray-200">SUPABASE_URL</code>
+            <code className="bg-white px-2 py-1 rounded border border-gray-200">SUPABASE_ANON_KEY</code>
+          </div>
+          <div className="mt-2 text-xs text-yellow-800">Optional (browser-side NLP): VITE_VOICEFLOW_API_URL, VITE_VOICEFLOW_API_KEY</div>
+        </div>
+
+        <div className="mt-4">
+          <h4 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
+            <Activity className="h-4 w-4" /> Diagnostics
+          </h4>
+          <div className="flex items-center gap-2">
+            <button className="btn btn-secondary btn-sm" onClick={runDiagnostics} disabled={diagRunning}>
+              {diagRunning ? 'Running…' : 'Run Diagnostics'}
+            </button>
+            {diag && (
+              <div className="text-sm text-gray-700">
+                <span className={`px-2 py-0.5 rounded ${diag.supabase ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>Supabase</span>
+                <span className={`ml-2 px-2 py-0.5 rounded ${diag.makeWebhook ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>Make</span>
+                <span className={`ml-2 px-2 py-0.5 rounded ${diag.openai ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>OpenAI</span>
+                <span className={`ml-2 px-2 py-0.5 rounded ${diag.voiceflowServerEnv ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>Calling Env</span>
+                {diag.dryRunCall && <span className="ml-2 text-xs text-gray-500">dry_run: {diag.dryRunCall}</span>}
+              </div>
+            )}
           </div>
         </div>
       </div>

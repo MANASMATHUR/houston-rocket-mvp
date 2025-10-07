@@ -21,6 +21,11 @@ export function InventoryTable() {
   const [showLowStockOnly, setShowLowStockOnly] = useState(false);
   const [sortBy, setSortBy] = useState<'player_name' | 'qty_inventory' | 'updated_at'>('player_name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newItem, setNewItem] = useState<{ player_name: string; edition: JerseyEdition; size: string; qty_inventory: number; qty_due_lva: number }>(
+    { player_name: '', edition: 'Icon', size: '48', qty_inventory: 0, qty_due_lva: 0 }
+  );
+  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -69,6 +74,12 @@ export function InventoryTable() {
 
     return filteredRows;
   }, [rows, search, edition, showLowStockOnly, sortBy, sortOrder]);
+
+  const turnInOne = async (row: Row) => {
+    const newInventory = Math.max(0, row.qty_inventory - 1);
+    const newDueLva = row.qty_due_lva + 1;
+    await updateField(row, { qty_inventory: newInventory, qty_due_lva: newDueLva });
+  };
 
   const updateField = async (row: Row, fields: Partial<Row>) => {
     const updated = { ...row, ...fields } as Row;
@@ -126,25 +137,56 @@ export function InventoryTable() {
     } catch {}
   };
 
-  const addRow = async () => {
-    const defaults: Omit<Row, 'id' | 'updated_at'> = {
-      player_name: '',
-      edition: 'Icon',
-      size: '48',
-      qty_inventory: 0,
-      qty_due_lva: 0,
-      updated_by: null,
-    };
-    const { data, error } = await supabase
-      .from('jerseys')
-      .insert({ ...defaults })
-      .select()
-      .single();
-    if (!error && data) {
+  const openAddModal = () => {
+    setNewItem({ player_name: '', edition: 'Icon', size: '48', qty_inventory: 0, qty_due_lva: 0 });
+    setShowAddModal(true);
+  };
+
+  const submitNewItem = async () => {
+    if (!newItem.player_name.trim()) {
+      toast.error('Player name is required');
+      return;
+    }
+    if (!['Icon','Statement','Association','City'].includes(newItem.edition)) {
+      toast.error('Select a valid edition');
+      return;
+    }
+    if (!newItem.size.trim()) {
+      toast.error('Size is required');
+      return;
+    }
+    setAdding(true);
+    try {
+      const { data: userRes } = await supabase.auth.getUser();
+      const updatedBy = userRes.user?.email ?? null;
+      const { data, error } = await supabase
+        .from('jerseys')
+        .insert({
+          player_name: newItem.player_name.trim(),
+          edition: newItem.edition,
+          size: newItem.size.trim(),
+          qty_inventory: Math.max(0, Number(newItem.qty_inventory) || 0),
+          qty_due_lva: Math.max(0, Number(newItem.qty_due_lva) || 0),
+          updated_by: updatedBy,
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+      if (error) throw new Error(error.message);
       setRows((prev) => [data as Row, ...prev]);
-      toast.success('New jersey added');
-    } else {
-      toast.error('Failed to add jersey');
+      setShowAddModal(false);
+      toast.success('Jersey added');
+      try {
+        await supabase.from('activity_logs').insert({
+          actor: updatedBy,
+          action: 'inventory_update',
+          details: { id: (data as any)?.id, created: true }
+        });
+      } catch {}
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to add jersey');
+    } finally {
+      setAdding(false);
     }
   };
 
@@ -221,7 +263,7 @@ export function InventoryTable() {
             Export
           </button>
           <button
-            onClick={addRow}
+            onClick={openAddModal}
             className="btn btn-primary btn-sm"
           >
             <Plus className="h-4 w-4" />
@@ -318,6 +360,16 @@ export function InventoryTable() {
         </div>
       </div>
 
+      {/* Low Stock Banner + Stats Summary */}
+      {filtered.some(r => r.qty_inventory <= 1) && (
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-900 rounded-lg p-3 flex items-center justify-between">
+          <div>
+            <strong>Low stock alert:</strong> {filtered.filter(r => r.qty_inventory <= 1).length} item(s) at or below threshold.
+          </div>
+          <button className="btn btn-secondary btn-sm" onClick={() => setShowLowStockOnly(true)}>Show low stock</button>
+        </div>
+      )}
+
       {/* Stats Summary */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -366,7 +418,7 @@ export function InventoryTable() {
         <div className="overflow-x-auto">
           <table className="table">
             <thead>
-              <tr>
+              <tr className="sticky top-0 bg-gray-50 z-10">
                 <th>Player</th>
                 <th>Edition</th>
                 <th>Size</th>
@@ -374,6 +426,7 @@ export function InventoryTable() {
                 <th>Due to LVA</th>
                 <th>Status</th>
                 <th>Last Updated</th>
+                <th>Updated By</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -426,6 +479,9 @@ export function InventoryTable() {
                     <div>{new Date(r.updated_at).toLocaleDateString()}</div>
                     <div className="text-xs text-gray-500">{new Date(r.updated_at).toLocaleTimeString()}</div>
                   </td>
+                  <td className="text-sm text-gray-600">
+                    {r.updated_by || '-'}
+                  </td>
                   <td>
                     <div className="flex items-center gap-2">
                       <button
@@ -434,6 +490,13 @@ export function InventoryTable() {
                         title="Place order call"
                       >
                         <Phone className="h-3 w-3" />
+                      </button>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => turnInOne(r)}
+                        title="Turn in 1 (dec inv, inc LVA)"
+                      >
+                        Turn In 1
                       </button>
                       <button
                         className="btn btn-secondary btn-sm"
@@ -473,6 +536,75 @@ export function InventoryTable() {
           </div>
         )}
       </div>
+
+      {/* Add Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white w-full max-w-md rounded-lg shadow-lg border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold mb-4">Add Jersey</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-700 mb-1">Player Name</label>
+                <input
+                  className="input w-full"
+                  value={newItem.player_name}
+                  onChange={(e) => setNewItem((s) => ({ ...s, player_name: e.target.value }))}
+                  placeholder="e.g., Jalen Green"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-700 mb-1">Edition</label>
+                <select
+                  className="input w-full"
+                  value={newItem.edition}
+                  onChange={(e) => setNewItem((s) => ({ ...s, edition: e.target.value as JerseyEdition }))}
+                >
+                  {EDITIONS.map((ed) => (
+                    <option key={ed} value={ed}>{ed}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm text-gray-700 mb-1">Size</label>
+                  <input
+                    className="input w-full"
+                    value={newItem.size}
+                    onChange={(e) => setNewItem((s) => ({ ...s, size: e.target.value }))}
+                    placeholder="48"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-700 mb-1">Inventory</label>
+                  <input
+                    type="number"
+                    className="input w-full"
+                    value={newItem.qty_inventory}
+                    onChange={(e) => setNewItem((s) => ({ ...s, qty_inventory: Number(e.target.value) }))}
+                    min={0}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-700 mb-1">Due to LVA</label>
+                <input
+                  type="number"
+                  className="input w-full"
+                  value={newItem.qty_due_lva}
+                  onChange={(e) => setNewItem((s) => ({ ...s, qty_due_lva: Number(e.target.value) }))}
+                  min={0}
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button className="btn btn-secondary btn-sm" onClick={() => setShowAddModal(false)} disabled={adding}>Cancel</button>
+              <button className="btn btn-primary btn-sm" onClick={submitNewItem} disabled={adding}>
+                {adding ? 'Adding...' : 'Add'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

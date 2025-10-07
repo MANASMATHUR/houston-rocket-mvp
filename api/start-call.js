@@ -11,10 +11,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
-    const { call_log_id, order_details } = body;
+    const body = typeof req.body === 'string' ? safeJsonParse(req.body) : (req.body || {});
+    const { call_log_id, order_details, dry_run } = body;
     if (!call_log_id || !order_details) {
       return res.status(400).json({ error: 'Missing call_log_id or order_details' });
+    }
+
+    // Allow a dry-run health check without contacting the provider
+    if (dry_run) {
+      return res.status(200).json({ ok: true, session_id: 'dry_run_session', transcript: '' });
     }
 
     // Build a public callback URL based on the current host
@@ -47,6 +52,10 @@ export default async function handler(req, res) {
   } catch (e) {
     return res.status(500).json({ error: e?.message || 'Unknown server error' });
   }
+}
+
+function safeJsonParse(text) {
+  try { return JSON.parse(text); } catch { return {}; }
 }
 
 
