@@ -26,7 +26,6 @@ export function InventoryTable() {
     { player_name: '', edition: 'Icon', size: '48', qty_inventory: 0, qty_due_lva: 0 }
   );
   const [adding, setAdding] = useState(false);
-  const fileInputRef = useState<HTMLInputElement | null>(null)[0];
 
   useEffect(() => {
     const load = async () => {
