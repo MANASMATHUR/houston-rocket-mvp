@@ -6,7 +6,7 @@ import { notifyLowStock } from '../../integrations/make';
 import { buildReorderEmailDraft, buildReorderEmailDraftAI, optimizeOrderQuantity } from '../../integrations/openai';
 import { VoiceMic } from './VoiceMic';
 import { initiateOrderCall } from '../../integrations/voiceflow';
-import { Search, Plus, Phone, Download, Filter, AlertTriangle, CheckCircle, Clock, Package } from 'lucide-react';
+import { Search, Plus, Phone, Download, Filter, AlertTriangle, CheckCircle, Clock, Package, Upload, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 type Row = JerseyItem;
@@ -26,6 +26,7 @@ export function InventoryTable() {
     { player_name: '', edition: 'Icon', size: '48', qty_inventory: 0, qty_due_lva: 0 }
   );
   const [adding, setAdding] = useState(false);
+  const fileInputRef = useState<HTMLInputElement | null>(null)[0];
 
   useEffect(() => {
     const load = async () => {
@@ -237,6 +238,52 @@ export function InventoryTable() {
     toast.success('Inventory data exported');
   };
 
+  const importCsv = async (file: File) => {
+    const text = await file.text();
+    const rows = text.split(/\r?\n/).filter(Boolean);
+    const [header, ...lines] = rows;
+    const cols = header.split(',').map((h) => h.trim().toLowerCase());
+    const required = ['player', 'edition', 'size', 'inventory', 'due to lva'];
+    const ok = required.every((r) => cols.includes(r));
+    if (!ok) {
+      toast.error('CSV must include: Player, Edition, Size, Inventory, Due to LVA');
+      return;
+    }
+    let imported = 0;
+    for (const line of lines) {
+      const parts = line.split(',');
+      if (parts.length < cols.length) continue;
+      const get = (name: string) => parts[cols.indexOf(name)].trim();
+      const player_name = get('player');
+      const edition = get('edition') as JerseyEdition;
+      const size = get('size');
+      const qty_inventory = Number(get('inventory')) || 0;
+      const qty_due_lva = Number(get('due to lva')) || 0;
+      try {
+        const { data: userRes } = await supabase.auth.getUser();
+        const updatedBy = userRes.user?.email ?? null;
+        const { data, error } = await supabase
+          .from('jerseys')
+          .insert({ player_name, edition, size, qty_inventory, qty_due_lva, updated_by: updatedBy, updated_at: new Date().toISOString() })
+          .select()
+          .single();
+        if (!error && data) {
+          setRows((prev) => [data as Row, ...prev]);
+          imported += 1;
+        }
+      } catch {}
+    }
+    toast.success(`Imported ${imported} item(s)`);
+  };
+
+  const sendToLeague = async (row: Row) => {
+    const qtyStr = window.prompt(`Send how many of ${row.player_name} ${row.edition} size ${row.size} to LVA?`, '1');
+    if (!qtyStr) return;
+    const qty = Math.max(0, Math.min(row.qty_inventory, Number(qtyStr) || 0));
+    if (qty <= 0) return;
+    await updateField(row, { qty_inventory: row.qty_inventory - qty, qty_due_lva: row.qty_due_lva + qty });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -262,6 +309,20 @@ export function InventoryTable() {
             <Download className="h-4 w-4" />
             Export
           </button>
+          <label className="btn btn-secondary btn-sm cursor-pointer">
+            <Upload className="h-4 w-4" />
+            Import CSV
+            <input
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) importCsv(f);
+                e.currentTarget.value = '';
+              }}
+            />
+          </label>
           <button
             onClick={openAddModal}
             className="btn btn-primary btn-sm"
@@ -497,6 +558,13 @@ export function InventoryTable() {
                         title="Turn in 1 (dec inv, inc LVA)"
                       >
                         Turn In 1
+                      </button>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => sendToLeague(r)}
+                        title="Send quantity to league (LVA)"
+                      >
+                        <Send className="h-3 w-3" />
                       </button>
                       <button
                         className="btn btn-secondary btn-sm"
