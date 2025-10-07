@@ -199,7 +199,11 @@ async function startVoiceflowCall(
     });
     
     if (!response.ok) {
-      throw new Error(`Voiceflow call API failed: ${response.statusText}`);
+      const text = await response.text();
+      let details: any = {};
+      try { details = JSON.parse(text); } catch { details = { raw: text }; }
+      const msg = `Voiceflow call API failed: ${response.status} ${response.statusText}` + (details?.error ? ` - ${details.error}` : '');
+      throw new Error(msg);
     }
     
     const result = await response.json();

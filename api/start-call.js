@@ -45,7 +45,7 @@ export default async function handler(req, res) {
     try { data = JSON.parse(text); } catch { data = { raw: text }; }
 
     if (!response.ok) {
-      return res.status(response.status).json({ error: 'Provider call failed', details: data });
+      return res.status(response.status).json({ error: 'Provider call failed', provider_status: response.status, provider_status_text: response.statusText, details: data });
     }
 
     return res.status(200).json(data);

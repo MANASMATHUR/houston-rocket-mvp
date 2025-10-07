@@ -476,18 +476,18 @@ export function InventoryTable() {
       {/* Inventory Table */}
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="table">
+          <table className="table min-w-[1100px]">
             <thead>
               <tr className="sticky top-0 bg-gray-50 z-10">
-                <th>Player</th>
-                <th>Edition</th>
-                <th>Size</th>
-                <th>Inventory</th>
-                <th>Due to LVA</th>
-                <th>Status</th>
-                <th>Last Updated</th>
-                <th>Updated By</th>
-                <th>Actions</th>
+                <th className="w-[220px]">Player</th>
+                <th className="w-[160px]">Edition</th>
+                <th className="w-[100px]">Size</th>
+                <th className="w-[150px]">Inventory</th>
+                <th className="w-[150px]">Due to LVA</th>
+                <th className="w-[140px]">Status</th>
+                <th className="w-[160px]">Last Updated</th>
+                <th className="w-[180px]">Updated By</th>
+                <th className="w-[220px]">Actions</th>
               </tr>
             </thead>
             <tbody>
